@@ -18,6 +18,7 @@ def executored(func):
     @wraps(func)
     async def wrapper(*args, **kwargs):
         return await coro_func(func, *args, **kwargs)
+
     return wrapper
 
 
@@ -67,9 +68,9 @@ def semaphored(semaphore_class=None, value=1, semaphore=None, **kwargs):
 
     def decorator(func):
         is_async = asyncio.iscoroutinefunction(func)
-        sem = semaphore or (
-            semaphore_class or (asyncio.Semaphore if is_async else threading.Semaphore)
-        )(value, **kwargs)
+        sem = semaphore or (semaphore_class or (asyncio.Semaphore if is_async else threading.Semaphore))(
+            value, **kwargs
+        )
 
         def wrapper(*fargs, **fkwargs):
             with sem:
@@ -97,7 +98,7 @@ def func_args(*args, **kwargs):
 
     def decorator(func):
         def wrapper(*fargs, **fkwargs):
-            new_args = list(fargs) + list(args)[len(fargs):]
+            new_args = list(fargs) + list(args)[len(fargs) :]
             new_kwargs = dict(kwargs)
             new_kwargs.update(fkwargs)
             return func(*new_args, **new_kwargs)

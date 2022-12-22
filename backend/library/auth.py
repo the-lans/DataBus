@@ -87,7 +87,9 @@ def authenticated(*authenticators: Authenticator):
                 else:
                     errors.append(res)
             raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail=' | '.join(errors))
+
         return wrapper
+
     return decorator
 
 
@@ -100,6 +102,7 @@ class DecoratorAuthenticator(Authenticator):
         @self.decorator
         def test_method(self, *args, **kwargs):
             pass
+
         try:
             test_method(handler, *args, **kwargs)
         except HTTPException as e:
@@ -114,9 +117,7 @@ class TokenAuthenticator(Authenticator):
 
     def applicable_to(self, handler: Request):
         return (
-            AUTH_TOKEN_NAME in handler.headers
-            or AUTH_TOKEN_NAME in handler.cookies
-            or 'token' in handler.path_params
+            AUTH_TOKEN_NAME in handler.headers or AUTH_TOKEN_NAME in handler.cookies or 'token' in handler.path_params
         )
 
     async def check_excluded(self, token: str) -> bool:
@@ -241,7 +242,9 @@ def ip_authenticated(ip):
                 raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Only client with certain IP can do it")
             else:
                 return method(self, *args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
