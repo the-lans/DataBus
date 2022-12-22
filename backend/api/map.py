@@ -4,6 +4,7 @@ from fastapi import Depends, Response
 
 from backend.app import app
 from backend.models.map import HTTPMap, HTTPMapInDB
+from backend.tasks.map import map_update
 from backend.api.base import BaseAppAuth
 from backend.api.user import set_response_headers, admin_role_authentificated
 
@@ -21,6 +22,11 @@ class HTTPMapApp(BaseAppAuth):
     @router.get("/api/map/list", tags=[TAG_CLASS])
     async def get_items(self):
         return await self.get_list(HTTPMapInDB)
+
+    @router.get("/api/map/update", tags=[TAG_CLASS])
+    @admin_role_authentificated
+    async def update_maps(self):
+        return {"success": True, "items": await map_update()}
 
     @router.get("/api/map/{item_id}", tags=[TAG_CLASS])
     async def get_item(self, item_id: int):
