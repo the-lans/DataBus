@@ -9,9 +9,9 @@ def migrate(migrator, database, fake=False, **kwargs):
     class HTTPMapInDB(Model):
         id = AutoField()
         created = DateTimeField(constraints=[SQL('DEFAULT current_timestamp')])
-        queue = TextField(null=False)
-        address = TextField(null=False)
-        url = TextField(null=False)
+        queue = TextField(null=False, default='')
+        address = TextField(null=False, default='127.0.0.1')
+        url = TextField(null=False, default='')
 
         class Meta:
             table_name = 'maps'

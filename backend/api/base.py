@@ -1,6 +1,6 @@
 from fastapi import Depends
 
-from backend.models.user import User
+from backend.models.user import UserInDB
 from backend.library.security import get_current_active_user
 from backend.db.base import execute
 
@@ -24,4 +24,4 @@ class BaseApp:
 
 
 class BaseAppAuth(BaseApp):
-    current_user: User = Depends(get_current_active_user)
+    current_user: UserInDB = Depends(get_current_active_user)

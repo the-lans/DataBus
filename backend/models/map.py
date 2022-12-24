@@ -6,6 +6,7 @@ from backend.db.base import BaseDBItem
 
 class HTTPMapInDB(BaseDBItem):
     queue = TextField(null=False)  # str
+    method = TextField(null=False)  # str
     address = TextField(null=False)  # str
     url = TextField(null=False)  # str
 
@@ -26,6 +27,7 @@ class HTTPMapInDB(BaseDBItem):
 """
 class HTTPMap(BaseItem):
     queue: str
+    method: str
     address: str
     url: str
 

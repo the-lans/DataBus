@@ -16,7 +16,7 @@ TAG_CLASS = "RedisApp"
 class RedisApp(BaseAppAuth):
     @staticmethod
     def parse(req: Request):
-        return req.query_params.getlist('args'), parse_api_exclude(dict(req.query_params), ['args'])
+        return req.query_params.getlist('args'), parse_api_exclude(dict(req.query_params), {'args'})
 
     @router.get("/api/redis/{cmd}", tags=[TAG_CLASS])
     async def get_redis(self, cmd: str = Path(), args: list[str] = Query()):

@@ -119,3 +119,7 @@ async def execute(query, *args, **kwargs):
 
 async def get_or_create(query, *args, **kwargs):
     return await manager.get_or_create(query, *args, **kwargs) if DB_ASYNC else query.get_or_create(*args, **kwargs)
+
+
+async def create(query, *args, **kwargs):
+    return await manager.create(query, *args, **kwargs) if DB_ASYNC else query.create(*args, **kwargs)
