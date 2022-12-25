@@ -25,6 +25,7 @@ class RequestMessage:
         self.params_dict = params_dict if params_dict else {}
         self.params_other = params_other if params_other else {}
         self.body = body
+        self.processed = False
 
     def get_from_request(self, req: Request) -> 'RequestMessage':
         self.method = req.method
@@ -73,6 +74,7 @@ class RequestMessage:
     async def send_requests(self) -> (int, str):
         timeout = ClientTimeout(total=60)
         results = []
+        self.processed = True
         async with ClientSession() as sess:
             for obj_req in self.req_in_db:
                 if obj_req.status == 'delivered':
@@ -87,9 +89,11 @@ class RequestMessage:
                         obj_req.status = 'delivered'
                         res = (resp.status, await resp.text())
                 except ClientResponseError as e:
+                    self.processed = False
                     obj_req.status = 'fail'
                     res = (e.status, e.message)
                 except Exception as e:
+                    self.processed = False
                     obj_req.status = 'fail'
                     res = (0, 'Failed to get content: %s' % e)
 

@@ -1,8 +1,12 @@
 import uvicorn
 import asyncio
+from multiprocessing import Process
+
 from backend.config import DB_SETTINGS
 from backend.api import *
 from backend.tasks.map import map_update
+from backend.tasks.base import processing
+from backend.tasks.processing import Processing
 
 
 if __name__ == "__main__":
@@ -11,5 +15,11 @@ if __name__ == "__main__":
     ioloop.run_until_complete(map_update())
     ioloop.close()
 
+    proc = Processing(timeout=2)
+    proc_requests = Process(target=processing, args=(proc,))
+
     print("Run...")
+    proc_requests.start()
     uvicorn.run(app, host=DB_SETTINGS['DOMAIN'], port=DB_SETTINGS['PORT'])
+    proc.stop_polling()
+    proc_requests.join()
