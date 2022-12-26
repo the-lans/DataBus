@@ -6,7 +6,7 @@ from fastapi_utils.inferring_router import InferringRouter
 
 from backend.app import app
 from backend.models.user import Token, User, UserInDB
-from backend.library.security import authenticate_user, create_access_token, get_current_active_user, get_password_hash
+from backend.library.security import authenticate_user, create_access_token, get_password_hash
 from backend.library.auth import role_authenticated
 from backend.config import ACCESS_TOKEN_EXPIRE_MINUTES
 from backend.api.base import BaseApp, BaseAppAuth
@@ -27,15 +27,15 @@ async def set_response_headers(response: Response):
 
 @app.post("/login", response_model=Token, tags=["user"])
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(form_data.username, form_data.password)
-    if not user:
+    auth_user = authenticate_user(form_data.username, form_data.password)
+    if not auth_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
+    access_token = create_access_token(data={"sub": auth_user.username}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
