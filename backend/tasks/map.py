@@ -18,8 +18,8 @@ async def map_update() -> dict:
 
 
 def filter_proxy_url(queue: str, method: str) -> dict:
-    proxy_urls = {}
+    result = {}
     for key, item in HTTP_MAP_OBJ.items():
         if item.queue == queue and item.method == method:
-            proxy_urls[key] = item
-    return proxy_urls
+            result[key] = item
+    return result

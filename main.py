@@ -5,6 +5,7 @@ from multiprocessing import Process
 from backend.config import DB_SETTINGS
 from backend.api import *
 from backend.tasks.map import map_update
+from backend.tasks.common_headers import headers_update
 from backend.tasks.base import processing
 from backend.tasks.processing import Processing
 
@@ -13,6 +14,7 @@ if __name__ == "__main__":
     print("Init...")
     ioloop = asyncio.get_event_loop()
     ioloop.run_until_complete(map_update())
+    ioloop.run_until_complete(headers_update())
     ioloop.close()
 
     proc = Processing(timeout=0.25)
