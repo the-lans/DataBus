@@ -5,7 +5,7 @@ from aiohttp.client_exceptions import ClientResponseError
 from urllib.parse import urljoin
 from typing import Dict, List
 
-from backend.library.api import parse_api_exclude, parse_api_filter, dict_to_str
+from backend.library.api import parse_api_exclude, parse_api_filter, dict_to_str, string_format_api
 from backend.tasks.map import filter_proxy_url
 from backend.db.base import create, execute
 from backend.models.map import HTTPMapInDB
@@ -71,6 +71,9 @@ class RequestMessage:
             if not change_status:
                 await execute(RequestsInDB.update(last_status=status).where(RequestsInDB.id == obj_req.id))
 
+    def get_process_url(self, req: RequestsInDB) -> str:
+        return urljoin(req.map.address, string_format_api(req.map.url, self.params_dict))
+
     async def send_requests(self) -> (int, str):
         timeout = ClientTimeout(total=60)
         results = []
@@ -82,9 +85,8 @@ class RequestMessage:
                     continue
 
                 try:
-                    process_url = urljoin(obj_req.map.address, obj_req.map.url)
                     async with sess.request(
-                        self.method, process_url, ssl=False, raise_for_status=True, timeout=timeout
+                        self.method, self.get_process_url(obj_req), ssl=False, raise_for_status=True, timeout=timeout
                     ) as resp:
                         obj_req.status = 'delivered'
                         res = (resp.status, await resp.text())

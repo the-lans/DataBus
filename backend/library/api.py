@@ -19,3 +19,10 @@ def parse_api_exclude(data: dict, keys_exclude: set) -> dict:
 
 def dict_to_str(data: dict, sep: str = ',') -> str:
     return sep.join([f'{key}={value}' for key, value in data.items()])
+
+
+def string_format_api(dformat: str, data: dict) -> str:
+    newstr = dformat[:]
+    for key, val in data.items():
+        newstr = newstr.replace('{' + key + '}', str(val))
+    return newstr
