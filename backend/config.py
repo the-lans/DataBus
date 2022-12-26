@@ -21,3 +21,5 @@ DB_DOMAIN = DB_SETTINGS.get('DOMAIN', '127.0.0.1')
 DB_NAME = DB_SETTINGS.get('NAME', None)
 DB_USER = DB_SETTINGS.get('USER', 'postgres')
 DB_ASYNC = DB_SETTINGS.get('ASYNC', False)
+
+REDIS_QUEUE = 'queue'

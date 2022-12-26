@@ -15,7 +15,7 @@ if __name__ == "__main__":
     ioloop.run_until_complete(map_update())
     ioloop.close()
 
-    proc = Processing(timeout=2)
+    proc = Processing(timeout=0.25)
     proc_requests = Process(target=processing, args=(proc,))
 
     print("Run...")

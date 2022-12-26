@@ -6,6 +6,7 @@ from backend.app import app
 from backend.models.request_message import RequestMessage
 from backend.api.base import BaseAppAuth
 from backend.library.redis import redis_call
+from backend.config import REDIS_QUEUE
 
 
 router = InferringRouter()
@@ -17,7 +18,8 @@ class QueueApp(BaseAppAuth):
     async def request_queue(self, name: str, req: Request):
         message = RequestMessage().get_from_request(req)
         message.set_proxy_url(name)
-        await redis_call("rpush", message.dumps())
+        await redis_call("rpush", name, message.dumps())
+        await redis_call("sadd", REDIS_QUEUE, name)
         await message.create_verdicts(self.current_user)
 
     @router.get("/api/queue/{name}", tags=[TAG_CLASS])
