@@ -17,7 +17,7 @@ def parse_api_exclude(data: dict, keys_exclude: set) -> dict:
     return {key: value for key, value in data.items() if key not in keys_exclude}
 
 
-def dict_to_str(data: dict, sep: str = ',') -> str:
+def dict_to_str_api(data: dict, sep: str = ',') -> str:
     return sep.join([f'{key}={value}' for key, value in data.items()])
 
 

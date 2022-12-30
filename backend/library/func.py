@@ -56,3 +56,22 @@ def auto_func(func_variants: Mapping[Callable, Callable], else_func=None):
         return func(*args, **kwargs)
 
     return func
+
+
+def str_to_bool(val) -> bool:
+    if isinstance(val, bool):
+        return val
+    elif val.isnumeric():
+        return bool(int(val))
+    elif val and val[0].lower() in ('t', 'f'):
+        return val[0].lower() == 't'
+    else:
+        return bool(val)
+
+
+def dict_to_str(data: dict, sep: str = ', ', sformat: str = '{:}: {:}') -> str:
+    return sep.join([sformat.format(str(key), str(val)) for key, val in data.items()])
+
+
+def new_file(file_path: str):
+    open(file_path, 'w').close()

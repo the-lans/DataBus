@@ -17,7 +17,7 @@ async def get_aclient(db: int = 0):
 
 
 async def get_new_aclient(db: int = 0):
-    return await aioredis.from_url('redis://127.0.0.1', db=db).set()
+    return await aioredis.from_url('redis://127.0.0.1', db=db)
 
 
 async def redis_call(op_name, *args, **kwargs):

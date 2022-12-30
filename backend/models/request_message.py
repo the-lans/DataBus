@@ -1,11 +1,14 @@
 from fastapi import Request
 import pickle
+import json
 from aiohttp import ClientTimeout, ClientSession
 from aiohttp.client_exceptions import ClientResponseError
 from urllib.parse import urljoin
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from backend.library.api import parse_api_exclude, parse_api_filter, dict_to_str, string_format_api
+from backend.library.api import parse_api_exclude, parse_api_filter, dict_to_str_api, string_format_api
+from backend.library.func import dict_to_str
+from backend.library.logger import MAIN_LOGGER
 from backend.tasks.map import filter_proxy_url
 from backend.tasks.common_headers import filter_headers
 from backend.db.base import create, execute
@@ -36,8 +39,9 @@ class RequestMessage:
         query_params = parse_api_exclude(dict(req.query_params), {'params'})
         self.params_dict = parse_api_filter(query_params, set(params_keys))
         self.params_other = parse_api_exclude(query_params, set(params_keys))
-        body = req.body()
-        self.body = body if body else None
+        if req.method.lower() in ['post', 'put', 'patch']:
+            body = req.body()
+            self.body = body if body else None
         return self
 
     def set_proxy_url(self, queue: str):
@@ -54,9 +58,9 @@ class RequestMessage:
                         **{
                             'user': user,
                             'map': obj_map,
-                            'data': dict_to_str(self.params_dict),
+                            'data': dict_to_str_api(self.params_dict),
                             'queue': self.queue,
-                            'params': dict_to_str(self.params_dict),
+                            'params': dict_to_str_api(self.params_dict),
                             'last_status': status,
                         },
                     )
@@ -120,3 +124,26 @@ class RequestMessage:
     @staticmethod
     def loads(obj: bytes) -> 'RequestMessage':
         return pickle.loads(obj)
+
+    def log_write(self, response: Optional[dict] = None):
+        _logger_print = MAIN_LOGGER.info
+        _logger_print(f"----------- Request {id(self)} -----------")
+        _logger_print(f"Queue: {self.queue}")
+        _logger_print(f"Method: {self.method}")
+        _logger_print(f"Initial URL: {self.initial_url}")
+        _proxy_urls = [self.get_process_url(obj_req) for obj_req in self.req_in_db]
+        if _proxy_urls:
+            _logger_print(f"Proxy URLs: {str(_proxy_urls)}")
+        if self.headers:
+            _headers = dict_to_str(self.headers, sep='\n')
+            _logger_print(f"Headers: \n{_headers}")
+        if self.params_dict:
+            _params_dict = dict_to_str(self.params_dict, sep='\n', sformat='{:} = {:}')
+            _logger_print(f"Params for bus: \n{_params_dict}")
+        if self.params_other:
+            _params_other = dict_to_str(self.params_other, sep='\n', sformat='{:} = {:}')
+            _logger_print(f"Params for proxy: \n{_params_other}")
+        if self.body:
+            _logger_print(f"Body: {self.body}")
+        if response:
+            _logger_print(f"Response: {json.dumps(response)}")
