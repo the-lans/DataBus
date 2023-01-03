@@ -31,10 +31,6 @@ class AdditionalApp(BaseAppAuth):
         content = file.file.read()
         return {"success": True, 'hash': sha256(content).hexdigest()}
 
-    @router.get("/api/common/uid4", tags=[TAG_CLASS])
-    async def get_uuid4(self):
-        return {"success": True, 'uuid': uuid4()}
-
     @router.get("/api/common/timestamp", tags=[TAG_CLASS])
     async def get_timestamp(self, sformat='%Y-%m-%d %H:%M:%S'):
         stamp = datetime.fromtimestamp(datetime.now().timestamp(), timezone.utc).strftime(sformat)

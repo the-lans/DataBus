@@ -16,7 +16,7 @@ TAG_CLASS = "QueueApp"
 @cbv(router)
 class QueueApp(BaseAppAuth):
     async def request_queue(self, name: str, req: Request):
-        message = RequestMessage().get_from_request(req)
+        message = await RequestMessage().get_from_request(req)
         message.set_proxy_url(name)
         await redis_call("rpush", name, message.dumps())
         await redis_call("sadd", REDIS_QUEUE, name)

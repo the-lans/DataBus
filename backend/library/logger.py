@@ -7,6 +7,8 @@ from backend.library.func import new_file
 
 
 class MainLogger:
+    _main_logger: Optional[logging.Logger] = None
+
     def __init__(self, name: str, filename: str = None):
         self._logger: Optional[logging.Logger] = None
         self._name = name
@@ -36,5 +38,11 @@ class MainLogger:
             __logger.addHandler(__handler)
         return __logger
 
+    @classmethod
+    def update_main_logger(cls):
+        cls._main_logger = MainLogger(ArgParse.getter('srv_name')).init_logger()
+        return cls._main_logger
 
-MAIN_LOGGER = MainLogger(ArgParse.getter('srv_name')).init_logger()
+    @classmethod
+    def main_logger(cls):
+        return cls._main_logger

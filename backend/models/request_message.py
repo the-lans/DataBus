@@ -8,7 +8,7 @@ from typing import Dict, List, Optional
 
 from backend.library.api import parse_api_exclude, parse_api_filter, dict_to_str_api, string_format_api
 from backend.library.func import dict_to_str
-from backend.library.logger import MAIN_LOGGER
+from backend.library.logger import MainLogger
 from backend.tasks.map import filter_proxy_url
 from backend.tasks.common_headers import filter_headers
 from backend.db.base import create, execute
@@ -31,7 +31,7 @@ class RequestMessage:
         self.body = body
         self.processed = False
 
-    def get_from_request(self, req: Request) -> 'RequestMessage':
+    async def get_from_request(self, req: Request) -> 'RequestMessage':
         self.method = req.method
         self.initial_url = req.url.path
         self.headers = dict(req.headers)
@@ -40,7 +40,7 @@ class RequestMessage:
         self.params_dict = parse_api_filter(query_params, set(params_keys))
         self.params_other = parse_api_exclude(query_params, set(params_keys))
         if req.method.lower() in ['post', 'put', 'patch']:
-            body = req.body()
+            body = await req.body()
             self.body = body if body else None
         return self
 
@@ -126,7 +126,8 @@ class RequestMessage:
         return pickle.loads(obj)
 
     def log_write(self, response: Optional[dict] = None):
-        _logger_print = MAIN_LOGGER.info
+        _logger_print = MainLogger.main_logger().info
+        _sep = '\n   '
         _logger_print(f"----------- Request {id(self)} -----------")
         _logger_print(f"Queue: {self.queue}")
         _logger_print(f"Method: {self.method}")
@@ -135,14 +136,14 @@ class RequestMessage:
         if _proxy_urls:
             _logger_print(f"Proxy URLs: {str(_proxy_urls)}")
         if self.headers:
-            _headers = dict_to_str(self.headers, sep='\n')
-            _logger_print(f"Headers: \n{_headers}")
+            _headers = dict_to_str(self.headers, sep=_sep)
+            _logger_print(f"Headers: {_sep}{_headers}")
         if self.params_dict:
-            _params_dict = dict_to_str(self.params_dict, sep='\n', sformat='{:} = {:}')
-            _logger_print(f"Params for bus: \n{_params_dict}")
+            _params_dict = dict_to_str(self.params_dict, sep=_sep, sformat='{:} = {:}')
+            _logger_print(f"Params for bus: {_sep}{_params_dict}")
         if self.params_other:
-            _params_other = dict_to_str(self.params_other, sep='\n', sformat='{:} = {:}')
-            _logger_print(f"Params for proxy: \n{_params_other}")
+            _params_other = dict_to_str(self.params_other, sep=_sep, sformat='{:} = {:}')
+            _logger_print(f"Params for proxy: {_sep}{_params_other}")
         if self.body:
             _logger_print(f"Body: {self.body}")
         if response:
