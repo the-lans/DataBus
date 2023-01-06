@@ -9,3 +9,4 @@ DB:
   NAME: "./data/app.db"
   USER: "admin"
   ASYNC: False
+  REQUEST_HISTORY: False

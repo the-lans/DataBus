@@ -16,6 +16,7 @@ from backend.models.map import HTTPMapInDB
 from backend.models.requests import RequestsInDB
 from backend.models.user import UserInDB
 from backend.models.verdict import VerdictInDB
+from backend.config import DB_REQUEST_HISTORY
 
 
 class RequestMessage:
@@ -52,25 +53,26 @@ class RequestMessage:
         change_status = False
         if not self.req_in_db:
             for obj_map in self.proxy_urls.values():
-                req_obj = await create(
-                    RequestsInDB,
-                    **{
-                        'user': user,
-                        'map': obj_map,
-                        'data': dict_to_str_api(self.params_dict),
-                        'queue': self.queue,
-                        'params': dict_to_str_api(self.params_dict),
-                        'last_status': status,
-                    },
-                )
+                req_data = {
+                    'user': user,
+                    'map': obj_map,
+                    'data': dict_to_str_api(self.params_dict),
+                    'queue': self.queue,
+                    'params': dict_to_str_api(self.params_dict),
+                    'last_status': status,
+                }
+                req_obj = await create(RequestsInDB, **req_data) if DB_REQUEST_HISTORY else RequestsInDB(**req_data)
                 self.req_in_db.append(req_obj)
             change_status = True
 
-        for obj_req in self.req_in_db:
-            await self.create_verdict(obj_req, status, change_status)
+        if DB_REQUEST_HISTORY:
+            for obj_req in self.req_in_db:
+                await self.create_verdict(obj_req, status, change_status)
 
     @staticmethod
     async def create_verdict(obj_req: RequestsInDB, status: str, change_status: bool = False):
+        if not DB_REQUEST_HISTORY:
+            return
         if status == 'new' or obj_req.last_status != status:
             await create(VerdictInDB, **{'req': obj_req, 'status': status})
             obj_req.last_status = status
