@@ -15,7 +15,7 @@ from backend.library.func import str_to_bool
 async def ftest_api(
     data: list[dict], directly: bool, srv: str, prt: int, uname: str, upass: str, num: int = 100
 ) -> Optional[Dict]:
-    timeout = ClientTimeout(total=300)
+    timeout = ClientTimeout(total=15)
     _logger = MainLogger.main_logger()
     result = None
     async with ClientSession() as sess:
@@ -36,10 +36,18 @@ async def ftest_api(
                 raise_for_status=True,
                 timeout=timeout,
                 headers=req_headers,
+                params={'num': len(data) * num},
             ):
                 _logger.info("Start...")
-                for _ in range(num):
-                    await ftest_api_requests(sess, timeout, data, directly, srv, prt, req_headers)
+                bus_srv = srv if directly else DB_SETTINGS['DOMAIN']
+                bus_prt = prt if directly else DB_SETTINGS['PORT']
+                tasks = [
+                    asyncio.create_task(
+                        ftest_api_requests(sess, timeout, data, directly, bus_srv, bus_prt, req_headers)
+                    )
+                    for _ in range(num)
+                ]
+                await asyncio.wait(tasks)
                 _logger.info("...Finish")
 
             async with sess.get(
@@ -94,7 +102,7 @@ async def ftest_api_requests(
             pass
 
 
-async def ftest_task(srv: str, prt: int, uname: str, upass: str, detail: bool):
+async def ftest_task(srv: str, prt: int, uname: str, upass: str, detail: bool, tsend: str):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) '
         'AppleWebKit/537.36 (KHTML, like Gecko) '
@@ -110,12 +118,14 @@ async def ftest_task(srv: str, prt: int, uname: str, upass: str, detail: bool):
         {'method': 'post', 'url': '/api/test/new', 'id': False, 'headers': headers, 'params': params, 'body': body},
     ]
 
-    await ftest_api(data_api, True, srv, prt, uname, upass, 1 if detail else 100)
-    await ftest_api(data_api, False, DB_SETTINGS['DOMAIN'], DB_SETTINGS['PORT'], uname, upass, 1 if detail else 100)
+    if tsend in ['all', 'directly']:
+        await ftest_api(data_api, True, srv, prt, uname, upass, 1 if detail else 100)
+    if tsend in ['all', 'bus']:
+        await ftest_api(data_api, False, srv, prt, uname, upass, 1 if detail else 100)
 
 
-async def ftest(srv: str, prt: int, uname: str, upass: str, detail: bool):
-    task = asyncio.create_task(ftest_task(srv, prt, uname, upass, detail))
+async def ftest(srv: str, prt: int, uname: str, upass: str, detail: bool, tsend: str):
+    task = asyncio.create_task(ftest_task(srv, prt, uname, upass, detail, tsend))
     await task
 
 
@@ -126,15 +136,17 @@ if __name__ == "__main__":
     parser.add_argument("--port", required=False, help="Server port")
     parser.add_argument("--user", required=False, help="Username")
     parser.add_argument("--pass", required=False, help="Password")
+    parser.add_argument("--send", required=False, help="Type sender")
     args = parser.parse_args()
 
-    detail = str_to_bool(args.detail) if args.detail else False
+    detail = str_to_bool(args.detail) if args.detail else True
     server = args.server if args.server else DB_SETTINGS['DOMAIN']
     port = int(args.port) if args.port else DB_SETTINGS['PORT'] + 100
     username = args.user if args.user else 'user'
     password = args.user if args.user else 'user'
+    tsend = args.send if args.send else 'all'
 
     ArgParse.setter(srv_name='sender', server=server, port=port)
     MainLogger.update_main_logger()
 
-    asyncio.run(ftest(server, port, username, password, detail))
+    asyncio.run(ftest(server, port, username, password, detail, tsend))

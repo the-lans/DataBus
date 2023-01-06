@@ -8,7 +8,7 @@ from backend.db.base import execute
 class BaseApp:
     @classmethod
     async def prepare(cls, obj_db):
-        return {"success": False} if obj_db is None else {"success": True}
+        return {"success": obj_db is not None}
 
     @staticmethod
     async def get_one_object(query):

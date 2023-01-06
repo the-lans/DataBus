@@ -53,6 +53,12 @@ def start_coro(coro, after: Union[timedelta, float] = None):
     return get_loop().create_task(coro)
 
 
+def run_and_get(coro):
+    task = asyncio.create_task(coro)
+    asyncio.get_running_loop().run_until_complete(task)
+    return task.result()
+
+
 async def maybe_coro(func, *args, __to_executor=False, **kwargs):
     """
     Await either coro or func
@@ -158,8 +164,7 @@ async def finish_coro_list(coros_list, results=None):
 
 
 def sync_coro(coro):
-    loop_loc = get_loop()
-    return loop_loc.run_until_complete(coro)
+    return get_loop().run_until_complete(coro)
 
 
 async def coro_gen(gen):

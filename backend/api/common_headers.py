@@ -4,7 +4,7 @@ from fastapi import Path, Depends, Response
 
 from backend.app import app
 from backend.models.common_headers import CommonHeadersInDB, CommonHeaders
-from backend.tasks.common_headers import headers_update, HTTP_HEADERS_DICT
+from backend.tasks.common_headers import HTTPHeadersData
 from backend.api.base import BaseAppAuth
 from backend.api.user import set_response_headers, admin_role_authentificated
 
@@ -21,23 +21,27 @@ class CommonHeadersApp(BaseAppAuth):
 
     @router.get("/api/headers/list", tags=[TAG_CLASS])
     async def get_items(self):
-        return {"items": HTTP_HEADERS_DICT.values()}
+        return {"items": list(HTTPHeadersData.data_dict.values())}
 
     @router.get("/api/headers/update", tags=[TAG_CLASS])
     @admin_role_authentificated
     async def update_headers(self):
-        items = await headers_update()
-        return {"success": True, "items": items.values()}
+        items = await HTTPHeadersData.update()
+        return {"success": True, "items": list(items.values())}
 
     @router.get("/api/headers/{item_id}", tags=[TAG_CLASS])
     async def get_item(self, item_id: int):
-        return {"success": True, **HTTP_HEADERS_DICT[item_id]} if item_id in HTTP_HEADERS_DICT else {"success": False}
+        return (
+            {"success": True, **HTTPHeadersData.data_dict[item_id]}
+            if item_id in HTTPHeadersData.data_dict
+            else {"success": False}
+        )
 
     @router.post("/api/headers/new", tags=[TAG_CLASS])
     @admin_role_authentificated
     async def new_item(self, item: CommonHeaders = Depends()):
         res = await CommonHeadersInDB.update_or_create(item, ret={"success": True})
-        await headers_update()
+        await HTTPHeadersData.update()
         return res
 
     @router.put("/api/headers/{item_id}", tags=[TAG_CLASS])
@@ -46,8 +50,8 @@ class CommonHeadersApp(BaseAppAuth):
         item_db = await self.get_object_id(item_id)
         res = await self.prepare(item_db)
         if item_db is not None:
-            return await CommonHeadersInDB.update_or_create(item, item_db, ret=res)
-        await headers_update()
+            res = await CommonHeadersInDB.update_or_create(item, item_db, ret=res)
+            await HTTPHeadersData.update()
         return res
 
 

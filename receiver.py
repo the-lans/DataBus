@@ -14,7 +14,7 @@ if __name__ == "__main__":
     parser.add_argument("--port", required=False, help="Server port")
     args = parser.parse_args()
 
-    detail = str_to_bool(args.detail) if args.detail else False
+    detail = str_to_bool(args.detail) if args.detail else True
     server = args.server if args.server else DB_SETTINGS['DOMAIN']
     port = int(args.port) if args.port else DB_SETTINGS['PORT'] + 100
 

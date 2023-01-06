@@ -8,10 +8,14 @@ class BaseProcessing:
         self.__stop_polling = Event()
         self.__timeout_polling = timeout
 
+    async def ainit(self):
+        pass
+
     async def polling(self):
         pass
 
     async def infinity_polling(self):
+        await self.ainit()
         while not self.__stop_polling.is_set():
             try:
                 await self.polling()

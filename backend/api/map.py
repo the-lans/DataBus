@@ -4,7 +4,7 @@ from fastapi import Path, Depends, Response
 
 from backend.app import app
 from backend.models.map import HTTPMap, HTTPMapInDB
-from backend.tasks.map import map_update, HTTP_MAP_DICT
+from backend.tasks.map import HTTPMapData
 from backend.api.base import BaseAppAuth
 from backend.api.user import set_response_headers, admin_role_authentificated
 
@@ -21,23 +21,27 @@ class HTTPMapApp(BaseAppAuth):
 
     @router.get("/api/map/list", tags=[TAG_CLASS])
     async def get_items(self):
-        return {"items": HTTP_MAP_DICT.values()}
+        return {"items": list(HTTPMapData.data_dict.values())}
 
     @router.get("/api/map/update", tags=[TAG_CLASS])
     @admin_role_authentificated
     async def update_maps(self):
-        items = await map_update()
-        return {"success": True, "items": items.values()}
+        items = await HTTPMapData.update()
+        return {"success": True, "items": list(items.values())}
 
     @router.get("/api/map/{item_id}", tags=[TAG_CLASS])
     async def get_item(self, item_id: int = Path()):
-        return {"success": True, **HTTP_MAP_DICT[item_id]} if item_id in HTTP_MAP_DICT else {"success": False}
+        return (
+            {"success": True, **HTTPMapData.data_dict[item_id]}
+            if item_id in HTTPMapData.data_dict
+            else {"success": False}
+        )
 
     @router.post("/api/map/new", tags=[TAG_CLASS])
     @admin_role_authentificated
     async def new_item(self, item: HTTPMap = Depends()):
         res = await HTTPMapInDB.update_or_create(item, ret={"success": True})
-        await map_update()
+        await HTTPMapData.update()
         return res
 
     @router.put("/api/map/{item_id}", tags=[TAG_CLASS])
@@ -46,8 +50,8 @@ class HTTPMapApp(BaseAppAuth):
         item_db = await self.get_object_id(item_id)
         res = await self.prepare(item_db)
         if item_db is not None:
-            return await HTTPMapInDB.update_or_create(item, item_db, ret=res)
-        await map_update()
+            res = await HTTPMapInDB.update_or_create(item, item_db, ret=res)
+            await HTTPMapData.update()
         return res
 
 

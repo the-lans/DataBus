@@ -8,10 +8,17 @@ def parse_api_list(args: list[str]) -> list[str]:
     fargs = []
     for item in args:
         item_new = item.strip()
-        if len(item_new) > 1 and item_new[0] == '"' and item_new[-1] == '"':
-            fargs.append(item_new[1:-1])
-        else:
-            fargs.extend(item_new.split())
+        ind, jnd = 0, 0
+        while True:
+            jnd = item_new.find('"' if item_new[ind] == '"' else ' ', ind + 1)
+            if item_new[ind] == '"':
+                ind += 1
+            fargs.append(item_new[ind:] if jnd < 0 else item_new[ind:jnd])
+            if jnd < 0:
+                break
+            ind = jnd + 1
+            if ind >= len(item_new):
+                break
     return fargs
 
 

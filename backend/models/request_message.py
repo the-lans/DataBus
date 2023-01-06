@@ -9,8 +9,8 @@ from typing import Dict, List, Optional
 from backend.library.api import parse_api_exclude, parse_api_filter, dict_to_str_api, string_format_api
 from backend.library.func import dict_to_str
 from backend.library.logger import MainLogger
-from backend.tasks.map import filter_proxy_url
-from backend.tasks.common_headers import filter_headers
+from backend.tasks.map import HTTPMapData
+from backend.tasks.common_headers import HTTPHeadersData
 from backend.db.base import create, execute
 from backend.models.map import HTTPMapInDB
 from backend.models.requests import RequestsInDB
@@ -24,7 +24,7 @@ class RequestMessage:
         self.queue = queue
         self.method = method
         self.initial_url = url
-        self.proxy_urls: Dict[HTTPMapInDB] = {}
+        self.proxy_urls: Dict[int, HTTPMapInDB] = {}
         self.headers = headers if headers else {}
         self.params_dict = params_dict if params_dict else {}
         self.params_other = params_other if params_other else {}
@@ -46,25 +46,24 @@ class RequestMessage:
 
     def set_proxy_url(self, queue: str):
         self.queue = queue
-        self.proxy_urls = filter_proxy_url(queue, self.method)
+        self.proxy_urls = HTTPMapData.filter(queue=queue, method=self.method)
 
     async def create_verdicts(self, user: UserInDB, status: str = 'new'):
         change_status = False
         if not self.req_in_db:
             for obj_map in self.proxy_urls.values():
-                self.req_in_db.append(
-                    await create(
-                        RequestsInDB,
-                        **{
-                            'user': user,
-                            'map': obj_map,
-                            'data': dict_to_str_api(self.params_dict),
-                            'queue': self.queue,
-                            'params': dict_to_str_api(self.params_dict),
-                            'last_status': status,
-                        },
-                    )
+                req_obj = await create(
+                    RequestsInDB,
+                    **{
+                        'user': user,
+                        'map': obj_map,
+                        'data': dict_to_str_api(self.params_dict),
+                        'queue': self.queue,
+                        'params': dict_to_str_api(self.params_dict),
+                        'last_status': status,
+                    },
                 )
+                self.req_in_db.append(req_obj)
             change_status = True
 
         for obj_req in self.req_in_db:
@@ -72,8 +71,9 @@ class RequestMessage:
 
     @staticmethod
     async def create_verdict(obj_req: RequestsInDB, status: str, change_status: bool = False):
-        if obj_req.last_status != status:
+        if status == 'new' or obj_req.last_status != status:
             await create(VerdictInDB, **{'req': obj_req, 'status': status})
+            obj_req.last_status = status
             if not change_status:
                 await execute(RequestsInDB.update(last_status=status).where(RequestsInDB.id == obj_req.id))
 
@@ -86,13 +86,14 @@ class RequestMessage:
         self.processed = True
         async with ClientSession() as sess:
             for obj_req in self.req_in_db:
-                if obj_req.status == 'delivered':
+                last_status = obj_req.last_status
+                if last_status == 'delivered':
                     results.append((200, None))
                     continue
 
                 try:
                     headers = self.headers.copy()
-                    headers.update(filter_headers(obj_req.queue))
+                    headers.update(HTTPHeadersData.filter_dict(queue=obj_req.queue))
                     async with sess.request(
                         self.method,
                         self.get_process_url(obj_req),
@@ -103,18 +104,18 @@ class RequestMessage:
                         params=self.params_other if self.params_other else None,
                         data=self.body,
                     ) as resp:
-                        obj_req.status = 'delivered'
+                        last_status = 'delivered'
                         res = (resp.status, await resp.text())
                 except ClientResponseError as e:
                     self.processed = False
-                    obj_req.status = 'fail'
+                    last_status = 'fail'
                     res = (e.status, e.message)
                 except Exception as e:
                     self.processed = False
-                    obj_req.status = 'fail'
+                    last_status = 'fail'
                     res = (0, 'Failed to get content: %s' % e)
 
-                await self.create_verdict(obj_req, obj_req.status)
+                await self.create_verdict(obj_req, last_status, False)
                 results.append(res)
         return results
 
