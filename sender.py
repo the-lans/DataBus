@@ -15,7 +15,7 @@ from backend.library.func import str_to_bool
 async def ftest_api(
     data: list[dict], directly: bool, srv: str, prt: int, uname: str, upass: str, num: int = 100
 ) -> Optional[Dict]:
-    timeout = ClientTimeout(total=15)
+    timeout = ClientTimeout(total=180)
     _logger = MainLogger.main_logger()
     result = None
     async with ClientSession() as sess:
@@ -27,8 +27,12 @@ async def ftest_api(
                 timeout=timeout,
                 data={'username': uname, 'password': upass},
             ) as resp:
-                result = await resp.json()
-                req_headers = {'Authorization': f"{result['token_type']} {result['access_token']}"}
+                if resp.status == 200:
+                    result = await resp.json()
+                    req_headers = {'Authorization': f"{result['token_type']} {result['access_token']}"}
+                else:
+                    _logger.warning(resp.url)
+                    _logger.warning(f"Status response: {resp.status}")
 
             async with sess.get(
                 databus_api('/api/test/stat/start', srv, prt),
@@ -57,13 +61,15 @@ async def ftest_api(
                 timeout=timeout,
                 headers=req_headers,
             ) as resp:
-                result = await resp.json()
-                if not (
-                    result['success'] and all([result[key] == num for key in ['get_item', 'new_item', 'update_item']])
-                ):
-                    _logger.warning(f"Assert error!")
-                _logger.info(f"Num: {num}")
-                _logger.info(f"Result: {json.dumps(result)}")
+                if resp.status == 200:
+                    result = await resp.json()
+                    if not (result['success'] and all([result[key] == num for key in ['get_item', 'new_item', 'update_item']])):
+                        _logger.warning(f"Assert error!")
+                    _logger.info(f"Num: {num}")
+                    _logger.info(f"Result: {json.dumps(result)}")
+                else:
+                    _logger.warning(resp.url)
+                    _logger.warning(f"Status response: {resp.status}")
 
         except ClientResponseError as e:
             _logger.error(f"Status: {e.status}, Message: {e.message}")

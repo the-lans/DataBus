@@ -4,3 +4,4 @@ from backend.api.redis import *
 from backend.api.queue import *
 from backend.api.common_headers import *
 from backend.api.additional import *
+from backend.api.events import *
