@@ -101,11 +101,14 @@ Instructions in English [below](#english-version).
 
 ## Отладка
 
-Запустите на отладку файл `main.py`
+Запустите Redis `redis-server`.
+
+Запустите на отладку файл `main.py` или как рабочее приложение `uvicorn main:app --reload`.
 
 Запустите `receiver.py` в качестве приёмника запросов и `sender.py` как источник запросов.
 
-`python receiver.py --detail false --server 127.0.0.1`
+`python receiver.py --detail false --server 127.0.0.1`  
+
 `python sender.py --detail false --server 127.0.0.1 --user admin --pass password --send all`
 
 Проверьте API на локальной машине: http://127.0.0.1:8000/
@@ -347,11 +350,14 @@ Installation sequence:
 
 ## Debugging
 
-Start debugging the `main.py` file
+Start Redis `redis-server`.
+
+Run the file `main.py` for debugging or as a working application `uvicorn main:app --reload`.
 
 Run `receiver.py` as source source and `sender.py` as source source.
 
-`python Receiver.py --detail false --server 127.0.0.1`
+`python Receiver.py --detail false --server 127.0.0.1`  
+
 `python sender.py --detail false --server 127.0.0.1 --user admin --pass password --send all`
 
 Take the API to check the machine: http://127.0.0.1:8000/
